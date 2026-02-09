@@ -14,14 +14,18 @@
         label { display: block; font-weight: 700; margin-bottom: 6px; color: var(--navy); font-size: 0.85rem; text-transform: uppercase; }
         select, textarea, input { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
         .info-card { background: var(--light); border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; margin-top: 20px; display: none; }
-        .section-title { border-bottom: 2px solid var(--gold); padding-bottom: 5px; margin-bottom: 15px; color: var(--navy); font-weight: bold; }
-        .data-row { margin-bottom: 8px; font-size: 0.9rem; }
-        .img-evidencia { width: 100%; border-radius: 8px; margin-top: 10px; border: 2px solid #ddd; }
+        .section-title { border-bottom: 2px solid var(--gold); padding-bottom: 5px; margin-bottom: 15px; color: var(--navy); font-weight: bold; font-size: 1rem; }
+        .data-row { margin-bottom: 10px; font-size: 0.9rem; line-height: 1.4; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .data-row b { color: var(--navy); display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 2px; }
+        .img-evidencia { width: 100%; border-radius: 8px; margin-top: 10px; border: 2px solid #ddd; display: block; background: #eee; min-height: 150px; object-fit: contain; }
         button { width: 100%; background: var(--navy); color: white; border: none; padding: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; margin-top: 15px; transition: 0.3s; }
         button:hover { background: var(--gold); }
         button:disabled { background: #94a3b8; cursor: not-allowed; }
-        .hidden { display: none; }
         .loader { text-align: center; color: var(--gold); font-weight: bold; display: none; padding: 10px; }
+        .badge-tipo { padding: 4px 8px; border-radius: 4px; color: white; font-weight: bold; font-size: 0.8rem; display: inline-block; margin-bottom: 10px; }
+        
+        /* Estilo para la nueva sección de alerta imperativa */
+        .alerta-prioridad { background: #fff4e5; border: 1px dashed var(--warning); padding: 15px; border-radius: 8px; margin-bottom: 15px; }
     </style>
 </head>
 <body>
@@ -50,7 +54,7 @@
                 <option value="">-- Seleccione --</option>
             </select>
         </div>
-        <div id="loaderRep" class="loader">Buscando en la base de datos...</div>
+        <div id="loaderRep" class="loader">Buscando reportes...</div>
         <div class="group">
             <label>2. Observaciones Pendientes</label>
             <select id="selectReporte" onchange="mostrarDetalle()" disabled>
@@ -59,34 +63,32 @@
         </div>
 
         <div id="visorDetalle" class="info-card">
-            <div class="section-title">Detalles de la Observación</div>
-            <div id="datosBase"></div>
-            
-            <div id="bloqueActo" class="hidden">
-                <div class="section-title" style="color:var(--error); margin-top:10px;">Acto Inseguro</div>
-                <div id="datosActo"></div>
-            </div>
-            
-            <div id="bloqueCondicion" class="hidden">
-                <div class="section-title" style="color:var(--warning); margin-top:10px;">Condición Insegura</div>
-                <div id="datosCondicion"></div>
-                <div id="valFoto"></div>
-            </div>
+            <div id="badgeCont"></div>
+            <div class="section-title">Detalles del Reporte</div>
+            <div id="datosVisor"></div>
+            <div id="valFoto"></div>
 
-            <hr style="margin: 20px 0; border: 0; border-top: 1px solid #ddd;">
+            <hr style="margin: 20px 0; border: 0; border-top: 2px solid var(--gold);">
 
             <form id="formDictamen">
                 <input type="hidden" id="idFila" name="idFila">
+                
+                <div id="areaCalificacion" class="alerta-prioridad" style="display: none;">
+                    <label style="color: var(--warning);">Calificación de Condición</label>
+                    <select name="calificacionPrioridad" id="calificacionPrioridad">
+                        <option value="Normal">Normal</option>
+                        <option value="Imperativo">Imperativo (Notificar Urgencia)</option>
+                    </select>
+                </div>
+
                 <label>Veredicto Final</label>
                 <select name="dictamen" required>
                     <option value="Validado">Validado (Aprobar)</option>
                     <option value="Corregir">Corregir (Enviar a revisión)</option>
                     <option value="Rechazado">Rechazado</option>
                 </select>
-                
                 <label style="margin-top:15px;">Comentarios para el Observador</label>
-                <textarea name="comentarios" rows="3" placeholder="Escriba aquí las razones o instrucciones..." required></textarea>
-                
+                <textarea name="comentarios" rows="3" placeholder="Indique las razones del veredicto..." required></textarea>
                 <button type="submit" id="btnEnviar">GUARDAR Y NOTIFICAR POR CORREO</button>
             </form>
         </div>
@@ -94,8 +96,7 @@
 </div>
 
 <script>
-    // Reemplaza con tu URL de Web App actualizada
-    const MI_URL = "https://script.google.com/macros/s/AKfycbwkbAQRPRjxCJdkQsXdt9lUG3lpMpH1VskR040YioD_J91N2y6RbsPTwADarjnnA7Wz/exec";
+    const MI_URL = "https://script.google.com/macros/s/AKfycbxldLIlq-w2hUaouOIy_mTAlni4xNa88N3gMw9eQFEPByohqAZj1rp0uGSU8Qn-ZoDr/exec";
     let baseDatos = [];
 
     window.onload = async () => {
@@ -105,20 +106,15 @@
             const sel = document.getElementById("loginNombre");
             sel.innerHTML = '<option value="">-- Seleccione --</option>';
             data.capitanes.forEach(c => sel.innerHTML += `<option value="${c}">${c}</option>`);
-        } catch (e) {
-            console.error("Error al cargar capitanes", e);
-        }
+        } catch (e) { console.error("Error", e); }
     };
 
     async function intentarLogin() {
         const nombre = document.getElementById("loginNombre").value;
         const pass = document.getElementById("loginPass").value;
         if(!nombre || !pass) return alert("Complete los datos");
-
         const btn = document.getElementById("btnLogin");
-        btn.disabled = true;
-        btn.innerText = "VERIFICANDO...";
-
+        btn.disabled = true; btn.innerText = "VERIFICANDO...";
         try {
             const resp = await fetch(`${MI_URL}?action=login&nombre=${encodeURIComponent(nombre)}&pass=${encodeURIComponent(pass)}`);
             const res = await resp.json();
@@ -128,46 +124,35 @@
                 document.getElementById("txtBienvenida").innerText = "Capitán: " + nombre;
                 const selObs = document.getElementById("selectObservador");
                 res.observadores.forEach(o => selObs.innerHTML += `<option value="${o}">${o}</option>`);
-            } else { 
-                alert("Error: " + res.message); 
-            }
-        } catch(e) {
-            alert("Error de conexión");
-        } finally {
-            btn.disabled = false;
-            btn.innerText = "INGRESAR";
-        }
+            } else { alert("Error: " + res.message); }
+        } catch(e) { alert("Error"); }
+        finally { btn.disabled = false; btn.innerText = "INGRESAR"; }
     }
 
     async function cargarReportes() {
         const obs = document.getElementById("selectObservador").value;
         const selRep = document.getElementById("selectReporte");
         const loader = document.getElementById("loaderRep");
-        const visor = document.getElementById("visorDetalle");
-        
-        visor.style.display = "none";
+        document.getElementById("visorDetalle").style.display = "none";
         if(!obs) return;
-
-        loader.style.display = "block";
-        selRep.disabled = true;
-        
+        loader.style.display = "block"; selRep.disabled = true;
         try {
             const resp = await fetch(`${MI_URL}?action=leerTodo&observador=${encodeURIComponent(obs)}`);
             baseDatos = await resp.json();
             selRep.innerHTML = '<option value="">-- Seleccione reporte --</option>';
-            
             if(baseDatos.length > 0) {
-                baseDatos.forEach(r => {
-                    selRep.innerHTML += `<option value="${r.id}">Sem ${r.semana} - ${r.sitio}</option>`;
-                });
+                baseDatos.forEach(r => { selRep.innerHTML += `<option value="${r.id}">Sem ${r.semana} - ${r.sitio}</option>`; });
                 selRep.disabled = false;
-            } else {
-                selRep.innerHTML = '<option value="">Sin reportes pendientes</option>';
-            }
-        } catch(e) { 
-            alert("Error al cargar datos"); 
-        }
+            } else { selRep.innerHTML = '<option value="">Sin reportes pendientes</option>'; }
+        } catch(e) { alert("Error al cargar datos"); }
         loader.style.display = "none";
+    }
+
+    function crearFila(titulo, valor) {
+        if (!valor) return "";
+        const valStr = valor.toString().trim().toUpperCase();
+        if (valStr === "N/A" || valStr === "" || valStr === "UNDEFINED") return "";
+        return `<div class="data-row"><b>${titulo}:</b> ${valor}</div>`;
     }
 
     function mostrarDetalle() {
@@ -176,57 +161,70 @@
         if(!item) return;
 
         document.getElementById("idFila").value = item.id;
-        document.getElementById("datosBase").innerHTML = `
-            <div class="data-row"><b>Sitio:</b> ${item.sitio}</div>
-            <div class="data-row"><b>Fecha:</b> ${item.fecha || 'N/A'}</div>
-        `;
-        
-        const esActo = item.tipo && item.tipo.toLowerCase().includes("acto");
-        document.getElementById("bloqueActo").classList.toggle("hidden", !esActo);
-        document.getElementById("bloqueCondicion").classList.toggle("hidden", esActo);
-        
-        if(esActo) {
-            document.getElementById("datosActo").innerHTML = `<div class="data-row"><b>Observación:</b> ${item.observado}</div>`;
+        const tipoNormalizado = (item.tipo || "").toLowerCase();
+        const esActo = tipoNormalizado.includes("acto");
+        const esCondicion = tipoNormalizado.includes("condicion") || tipoNormalizado.includes("condición");
+
+        // LÓGICA DE CALIFICACIÓN (Imperativo/Normal)
+        const areaCalificacion = document.getElementById("areaCalificacion");
+        if(esCondicion) {
+            areaCalificacion.style.display = "block";
         } else {
-            document.getElementById("datosCondicion").innerHTML = `<div class="data-row"><b>Descripción:</b> ${item.condicionDesc}</div>`;
-            document.getElementById("valFoto").innerHTML = (item.foto && item.foto.startsWith("http")) 
-                ? `<a href="${item.foto}" target="_blank"><img src="${item.foto}" class="img-evidencia"></a>` 
-                : "<i>Sin evidencia fotográfica</i>";
+            areaCalificacion.style.display = "none";
+            document.getElementById("calificacionPrioridad").value = "Normal";
         }
+
+        // Badge
+        const colorBadge = esActo ? 'var(--navy)' : (esCondicion ? 'var(--error)' : 'var(--gold)');
+        document.getElementById("badgeCont").innerHTML = `<span class="badge-tipo" style="background:${colorBadge}">${(item.tipo || "REPORTE").toUpperCase()}</span>`;
+
+        let htmlFinal = "";
+        if (esActo) {
+            htmlFinal += crearFila("Semana", item.semana);
+            htmlFinal += crearFila("Fecha Registro", item.fechaReg);
+            htmlFinal += crearFila("Sitio / Ubicación", item.sitio);
+            htmlFinal += crearFila("Equipo (EPP) Provisto", item.provisto);
+            htmlFinal += crearFila("Equipo (EPP) Faltante", item.faltante);
+        } else {
+            htmlFinal += crearFila("Semana", item.semana);
+            htmlFinal += crearFila("Fecha Registro", item.fechaReg);
+            htmlFinal += crearFila("Sitio / Ubicación", item.sitio);
+            htmlFinal += crearFila("Responsables", item.responsables);
+            htmlFinal += crearFila("Descripción de la Condición", item.condicionDesc);
+        }
+
+        document.getElementById("datosVisor").innerHTML = htmlFinal;
+
+        let urlVisualizacion = "";
+        const fotoValida = item.foto && item.foto.toString().trim().toUpperCase() !== "N/A";
+        if(fotoValida && item.foto.includes("drive.google.com")) {
+            const match = item.foto.match(/[-\w]{25,}/);
+            if(match) urlVisualizacion = `https://drive.google.com/thumbnail?id=${match[0]}&sz=w1000`;
+        }
+
+        const contenedorFoto = document.getElementById("valFoto");
+        contenedorFoto.innerHTML = urlVisualizacion ? `<div class="section-title" style="margin-top:20px;">Evidencia Fotográfica</div><a href="${item.foto}" target="_blank"><img src="${urlVisualizacion}" class="img-evidencia"></a>` : "";
+
         document.getElementById("visorDetalle").style.display = "block";
     }
 
     document.getElementById("formDictamen").onsubmit = async (e) => {
         e.preventDefault();
         const btn = document.getElementById("btnEnviar");
-        const originalText = btn.innerText;
+        if(!confirm("¿Confirmar veredicto y notificación?")) return;
         
-        if(!confirm("¿Confirmar veredicto? Se enviará un correo al observador.")) return;
-
-        btn.disabled = true;
-        btn.innerText = "PROCESANDO Y NOTIFICANDO...";
-
+        btn.disabled = true; btn.innerText = "PROCESANDO...";
         const formData = new FormData(e.target);
         const params = new URLSearchParams(formData);
 
         try {
-            // Usamos POST para enviar el dictamen
-            await fetch(MI_URL, { 
-                method: 'POST', 
-                body: params, 
-                mode: 'no-cors' 
-            });
-
-            alert("¡Éxito! El veredicto ha sido guardado y el correo de notificación ha sido enviado.");
-            e.target.reset();
+            // Se envía 'idFila', 'dictamen', 'comentarios' y 'calificacionPrioridad'
+            await fetch(MI_URL, { method: 'POST', body: params, mode: 'no-cors' });
+            alert("Veredicto guardado y notificación enviada.");
             document.getElementById("visorDetalle").style.display = "none";
-            cargarReportes(); // Recargar lista
-        } catch(e) {
-            alert("Error al guardar los datos. Intente de nuevo.");
-        } finally {
-            btn.disabled = false;
-            btn.innerText = originalText;
-        }
+            cargarReportes(); 
+        } catch(e) { alert("Error al guardar."); }
+        finally { btn.disabled = false; btn.innerText = "GUARDAR Y NOTIFICAR POR CORREO"; }
     };
 </script>
 </body>
