@@ -45,6 +45,7 @@
     </div>
 </div>
 
+
 <div id="mainPanel" class="container" style="display: none;">
     <div class="header"><h1 id="txtBienvenida">Panel</h1></div>
     <div class="body-content">
@@ -67,17 +68,17 @@
             <div class="section-title">Detalles del Reporte</div>
             <div id="datosVisor"></div>
             <div id="valFoto"></div>
-
             <hr style="margin: 20px 0; border: 0; border-top: 2px solid var(--gold);">
-
             <form id="formDictamen">
-                <input type="hidden" id="idFila" name="idFila">
+                <input type="hidden" id="idFila" name="idFila"> 
                 
-                <div id="areaCalificacion" class="alerta-prioridad" style="display: none;">
+
+                  <div id="areaCalificacion" class="alerta-prioridad" style="display: none;">
                     <label style="color: var(--warning);">Calificación de Condición</label>
                     <select name="calificacionPrioridad" id="calificacionPrioridad">
-                        <option value="Normal">Normal</option>
-                        <option value="Imperativo">Imperativo (Notificar Urgencia)</option>
+                        <option value="INMEDIATO">INMEDIATO</option>
+                        <option value="PROGRAMADO">PROGRAMADO</option>
+                        <option value="PROXIMO PARO">PRÓXIMO PARO</option>
                     </select>
                 </div>
 
@@ -229,3 +230,4 @@
 </script>
 </body>
 </html>
+
