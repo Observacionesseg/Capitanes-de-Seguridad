@@ -71,7 +71,16 @@
             <hr style="margin: 20px 0; border: 0; border-top: 2px solid var(--gold);">
             <form id="formDictamen">
                 <input type="hidden" id="idFila" name="idFila"> 
- 
+                
+
+                  <div id="areaCalificacion" class="alerta-prioridad" style="display: none;">
+                    <label style="color: var(--warning);">Calificación de Condición</label>
+                    <select name="calificacionPrioridad" id="calificacionPrioridad">
+                        <option value="INMEDIATO">INMEDIATO</option>
+                        <option value="PROGRAMADO">PROGRAMADO</option>
+                        <option value="PROXIMO PARO">PRÓXIMO PARO</option>
+                    </select>
+                </div>
 
                 <label>Revisión Final</label>
                 <select name="dictamen" required>
@@ -82,7 +91,10 @@
                 <textarea name="comentarios" rows="3" placeholder="Escriba un comentario o retroalimentación..." required></textarea>
                 <button type="submit" id="btnEnviar">GUARDAR Y NOTIFICAR POR CORREO</button>
             </form>
-  
+        </div>
+    </div>
+</div>
+
 <script>
     const MI_URL = "https://script.google.com/macros/s/AKfycbz1wxqqsWcVXH80t78tNiVtuvhllUyTz8uLt8rrlD_zfSeGn--G-pK2XcBWpKDijWE/exec";
     let baseDatos = [];
@@ -219,5 +231,3 @@
 </script>
 </body>
 </html>
-
-
