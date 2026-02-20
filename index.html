@@ -82,14 +82,13 @@
                     </select>
                 </div>
 
-                <label>Veredicto Final</label>
+                <label>Revisión Final</label>
                 <select name="dictamen" required>
                     <option value="Validado">Validado (Aprobar)</option>
-                    <option value="Corregir">Corregir (Enviar a revisión)</option>
-                    <option value="Rechazado">Rechazado</option>
+                    <option value="Corregir">Retroalimentación (Enviar a revisión)</option>
                 </select>
                 <label style="margin-top:15px;">Comentarios para el Observador</label>
-                <textarea name="comentarios" rows="3" placeholder="Indique las razones del veredicto..." required></textarea>
+                <textarea name="comentarios" rows="3" placeholder="Escriba un comentario o retroalimentación..." required></textarea>
                 <button type="submit" id="btnEnviar">GUARDAR Y NOTIFICAR POR CORREO</button>
             </form>
         </div>
@@ -97,7 +96,7 @@
 </div>
 
 <script>
-    const MI_URL = "https://script.google.com/macros/s/AKfycbxldLIlq-w2hUaouOIy_mTAlni4xNa88N3gMw9eQFEPByohqAZj1rp0uGSU8Qn-ZoDr/exec";
+    const MI_URL = "https://script.google.com/macros/s/AKfycbz1wxqqsWcVXH80t78tNiVtuvhllUyTz8uLt8rrlD_zfSeGn--G-pK2XcBWpKDijWE/exec";
     let baseDatos = [];
 
     window.onload = async () => {
@@ -175,9 +174,12 @@
             document.getElementById("calificacionPrioridad").value = "Normal";
         }
 
-        // Badge
+        // --- CAMBIO SOLICITADO PARA EL BADGE ---
         const colorBadge = esActo ? 'var(--navy)' : (esCondicion ? 'var(--error)' : 'var(--gold)');
-        document.getElementById("badgeCont").innerHTML = `<span class="badge-tipo" style="background:${colorBadge}">${(item.tipo || "REPORTE").toUpperCase()}</span>`;
+        const textoBadge = esActo ? "OBSERVACIÓN DE SEGURIDAD" : (item.tipo || "REPORTE").toUpperCase();
+        
+        document.getElementById("badgeCont").innerHTML = `<span class="badge-tipo" style="background:${colorBadge}">${textoBadge}</span>`;
+        // ---------------------------------------
 
         let htmlFinal = "";
         if (esActo) {
@@ -219,7 +221,6 @@
         const params = new URLSearchParams(formData);
 
         try {
-            // Se envía 'idFila', 'dictamen', 'comentarios' y 'calificacionPrioridad'
             await fetch(MI_URL, { method: 'POST', body: params, mode: 'no-cors' });
             alert("Veredicto guardado y notificación enviada.");
             document.getElementById("visorDetalle").style.display = "none";
@@ -230,4 +231,3 @@
 </script>
 </body>
 </html>
-
