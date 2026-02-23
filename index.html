@@ -22,10 +22,7 @@
         button:hover { background: var(--gold); }
         button:disabled { background: #94a3b8; cursor: not-allowed; }
         .loader { text-align: center; color: var(--gold); font-weight: bold; display: none; padding: 10px; }
-        .badge-tipo { padding: 4px 8px; border-radius: 4px; color: white; font-weight: bold; font-size: 0.8rem; display: inline-block; margin-bottom: 10px; }
-        
-        /* Estilo para la nueva sección de alerta imperativa */
-        .alerta-prioridad { background: #fff4e5; border: 1px dashed var(--warning); padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        .badge-tipo { padding: 6px 12px; border-radius: 4px; color: white; font-weight: bold; font-size: 0.85rem; display: inline-block; margin-bottom: 10px; text-transform: uppercase; }
     </style>
 </head>
 <body>
@@ -44,7 +41,6 @@
         <button onclick="intentarLogin()" id="btnLogin">INGRESAR</button>
     </div>
 </div>
-
 
 <div id="mainPanel" class="container" style="display: none;">
     <div class="header"><h1 id="txtBienvenida">Panel</h1></div>
@@ -68,27 +64,22 @@
             <div class="section-title">Detalles del Reporte</div>
             <div id="datosVisor"></div>
             <div id="valFoto"></div>
+
             <hr style="margin: 20px 0; border: 0; border-top: 2px solid var(--gold);">
+
             <form id="formDictamen">
-                <input type="hidden" id="idFila" name="idFila"> 
+                <input type="hidden" id="idFila" name="idFila">
                 
-
-                  <div id="areaCalificacion" class="alerta-prioridad" style="display: none;">
-                    <label style="color: var(--warning);">Calificación de Condición</label>
-                    <select name="calificacionPrioridad" id="calificacionPrioridad">
-                        <option value="INMEDIATO">INMEDIATO</option>
-                        <option value="PROGRAMADO">PROGRAMADO</option>
-                        <option value="PROXIMO PARO">PRÓXIMO PARO</option>
-                    </select>
-                </div>
-
-                <label>Revisión Final</label>
+                <label>Veredicto Final</label>
                 <select name="dictamen" required>
                     <option value="Validado">Validado (Aprobar)</option>
-                    <option value="Corregir">Retroalimentación (Enviar a revisión)</option>
+                    <option value="Corregir">Corregir (Enviar a revisión)</option>
+                    <option value="Rechazado">Rechazado</option>
                 </select>
+                
                 <label style="margin-top:15px;">Comentarios para el Observador</label>
-                <textarea name="comentarios" rows="3" placeholder="Escriba un comentario o retroalimentación..." required></textarea>
+                <textarea name="comentarios" rows="3" placeholder="Indique las razones del veredicto..." required></textarea>
+                
                 <button type="submit" id="btnEnviar">GUARDAR Y NOTIFICAR POR CORREO</button>
             </form>
         </div>
@@ -96,7 +87,7 @@
 </div>
 
 <script>
-    const MI_URL = "https://script.google.com/macros/s/AKfycbzm-WCDJdo8L8pZdotc6YvjKOiDmH86MRmYMjCoyxEd_F42moCjImSHmWdjtspwQo1f/exec";
+    const MI_URL = "https://script.google.com/macros/s/AKfycbxldLIlq-w2hUaouOIy_mTAlni4xNa88N3gMw9eQFEPByohqAZj1rp0uGSU8Qn-ZoDr/exec";
     let baseDatos = [];
 
     window.onload = async () => {
@@ -161,28 +152,25 @@
         if(!item) return;
 
         document.getElementById("idFila").value = item.id;
-        const tipoNormalizado = (item.tipo || "").toLowerCase();
-        const esActo = tipoNormalizado.includes("acto");
-        const esCondicion = tipoNormalizado.includes("condicion") || tipoNormalizado.includes("condición");
+        const tipoOriginal = (item.tipo || "").toLowerCase();
+        
+        let textoBadge = "REPORTE";
+        let colorBadge = "var(--gold)";
 
-        // LÓGICA DE CALIFICACIÓN (Imperativo/Normal)
-        const areaCalificacion = document.getElementById("areaCalificacion");
-        if(esCondicion) {
-            areaCalificacion.style.display = "block";
-        } else {
-            areaCalificacion.style.display = "none";
-            document.getElementById("calificacionPrioridad").value = "Normal";
+        // Lógica de renombramiento visual
+        if (tipoOriginal.includes("acto")) {
+            textoBadge = "Observación de Seguridad";
+            colorBadge = "var(--navy)";
+        } else if (tipoOriginal.includes("condicion") || tipoOriginal.includes("condición")) {
+            textoBadge = "Condición Insegura";
+            colorBadge = "var(--error)";
         }
 
-        // --- CAMBIO SOLICITADO PARA EL BADGE ---
-        const colorBadge = esActo ? 'var(--navy)' : (esCondicion ? 'var(--error)' : 'var(--gold)');
-        const textoBadge = esActo ? "OBSERVACIÓN DE SEGURIDAD" : (item.tipo || "REPORTE").toUpperCase();
-        
         document.getElementById("badgeCont").innerHTML = `<span class="badge-tipo" style="background:${colorBadge}">${textoBadge}</span>`;
-        // ---------------------------------------
 
         let htmlFinal = "";
-        if (esActo) {
+        // Usamos la lógica original para decidir qué campos mostrar
+        if (tipoOriginal.includes("acto")) {
             htmlFinal += crearFila("Semana", item.semana);
             htmlFinal += crearFila("Fecha Registro", item.fechaReg);
             htmlFinal += crearFila("Sitio / Ubicación", item.sitio);
@@ -231,4 +219,3 @@
 </script>
 </body>
 </html>
-
