@@ -13,16 +13,20 @@
         .group { margin-bottom: 18px; }
         label { display: block; font-weight: 700; margin-bottom: 6px; color: var(--navy); font-size: 0.85rem; text-transform: uppercase; }
         select, textarea, input { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
-        .info-card { background: var(--light); border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; margin-top: 20px; display: none; }
+        .info-card { background: white; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; margin-top: 20px; display: none; }
         .section-title { border-bottom: 2px solid var(--gold); padding-bottom: 5px; margin-bottom: 15px; color: var(--navy); font-weight: bold; font-size: 1rem; }
-        .data-row { margin-bottom: 10px; font-size: 0.9rem; line-height: 1.4; border-bottom: 1px solid #eee; padding-bottom: 5px; }
-        .data-row b { color: var(--navy); display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 2px; }
+        .data-row { margin-bottom: 12px; font-size: 0.95rem; line-height: 1.4; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px; }
+        .data-row b { color: var(--navy); display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 2px; letter-spacing: 0.5px; }
+        
+        /* Estilo para la caja de descripción destacada */
+        .desc-box { background: #f8fafc; padding: 12px; border-radius: 6px; border-left: 4px solid var(--gold); margin-top: 10px; color: #334155; font-style: italic; }
+        
         .img-evidencia { width: 100%; border-radius: 8px; margin-top: 10px; border: 2px solid #ddd; display: block; background: #eee; min-height: 150px; object-fit: contain; }
         button { width: 100%; background: var(--navy); color: white; border: none; padding: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; margin-top: 15px; transition: 0.3s; }
         button:hover { background: var(--gold); }
         button:disabled { background: #94a3b8; cursor: not-allowed; }
         .loader { text-align: center; color: var(--gold); font-weight: bold; display: none; padding: 10px; }
-        .badge-tipo { padding: 6px 12px; border-radius: 4px; color: white; font-weight: bold; font-size: 0.85rem; display: inline-block; margin-bottom: 10px; text-transform: uppercase; }
+        .badge-tipo { padding: 6px 12px; border-radius: 4px; color: white; font-weight: bold; font-size: 0.85rem; display: inline-block; margin-bottom: 15px; text-transform: uppercase; }
     </style>
 </head>
 <body>
@@ -65,21 +69,18 @@
             <div id="datosVisor"></div>
             <div id="valFoto"></div>
 
-            <hr style="margin: 20px 0; border: 0; border-top: 2px solid var(--gold);">
+            <hr style="margin: 25px 0; border: 0; border-top: 2px solid var(--gold);">
 
             <form id="formDictamen">
                 <input type="hidden" id="idFila" name="idFila">
-                
                 <label>Veredicto Final</label>
                 <select name="dictamen" required>
                     <option value="Validado">Validado (Aprobar)</option>
-                    <option value="Corregir">Corregir (Enviar a revisión)</option>
+                    <option value="Corregir">Corregir (Retroalimentación)</option>
                     <option value="Rechazado">Rechazado</option>
                 </select>
-                
                 <label style="margin-top:15px;">Comentarios para el Observador</label>
                 <textarea name="comentarios" rows="3" placeholder="Indique las razones del veredicto..." required></textarea>
-                
                 <button type="submit" id="btnEnviar">GUARDAR Y NOTIFICAR POR CORREO</button>
             </form>
         </div>
@@ -87,7 +88,7 @@
 </div>
 
 <script>
-    const MI_URL = "https://script.google.com/macros/s/AKfycbyFLiX7xzDLkb7vaoMigSJouXpBFhGB-7UNRYT60N-GqODJf6-hQFIlHW305UgWFv3L/exec";
+    const MI_URL = "https://script.google.com/macros/s/AKfycbzcxSzlOAVJJ4hODfPw-waMxMWwX8CbSRogZ6hV4m65VS1I7MfVwDhvfakvbygDLbbP/exec";
     let baseDatos = [];
 
     window.onload = async () => {
@@ -143,7 +144,7 @@
         if (!valor) return "";
         const valStr = valor.toString().trim().toUpperCase();
         if (valStr === "N/A" || valStr === "" || valStr === "UNDEFINED") return "";
-        return `<div class="data-row"><b>${titulo}:</b> ${valor}</div>`;
+        return `<div class="data-row"><b>${titulo}</b> ${valor}</div>`;
     }
 
     function mostrarDetalle() {
@@ -152,40 +153,49 @@
         if(!item) return;
 
         document.getElementById("idFila").value = item.id;
-        const tipoOriginal = (item.tipo || "").toLowerCase();
+        
+        // Normalización para detectar el tipo de reporte
+        const tipoOriginal = (item.tipo || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         
         let textoBadge = "REPORTE";
         let colorBadge = "var(--gold)";
 
-        // Lógica de renombramiento visual
-        if (tipoOriginal.includes("acto")) {
-            textoBadge = "Observación de Seguridad";
+        if (tipoOriginal.includes("acto") || tipoOriginal.includes("observacion")) {
+            textoBadge = "OBSERVACIÓN DE SEGURIDAD";
             colorBadge = "var(--navy)";
-        } else if (tipoOriginal.includes("condicion") || tipoOriginal.includes("condición")) {
-            textoBadge = "Condición Insegura";
+        } else if (tipoOriginal.includes("condicion")) {
+            textoBadge = "CONDICIÓN INSEGURA";
             colorBadge = "var(--error)";
         }
 
         document.getElementById("badgeCont").innerHTML = `<span class="badge-tipo" style="background:${colorBadge}">${textoBadge}</span>`;
 
         let htmlFinal = "";
-        // Usamos la lógica original para decidir qué campos mostrar
-        if (tipoOriginal.includes("acto")) {
-            htmlFinal += crearFila("Semana", item.semana);
-            htmlFinal += crearFila("Fecha Registro", item.fechaReg);
-            htmlFinal += crearFila("Sitio / Ubicación", item.sitio);
-            htmlFinal += crearFila("Equipo (EPP) Provisto", item.provisto);
-            htmlFinal += crearFila("Equipo (EPP) Faltante", item.faltante);
+        htmlFinal += crearFila("SEMANA", item.semana);
+        htmlFinal += crearFila("FECHA REGISTRO", item.fechaReg);
+        htmlFinal += crearFila("SITIO / UBICACIÓN", item.sitio);
+
+        // Lógica para mostrar descripción y campos específicos
+        if (tipoOriginal.includes("acto") || tipoOriginal.includes("observacion")) {
+            htmlFinal += crearFila("EQUIPO PROVISTO", item.provisto);
+            htmlFinal += crearFila("EQUIPO FALTANTE", item.faltante);
+            htmlFinal += `
+                <div class="data-row" style="border:none;">
+                    <b>DESCRIPCIÓN DE LA ACTIVIDAD:</b>
+                    <div class="desc-box">${item.comentarioActividad || "Sin descripción registrada"}</div>
+                </div>`;
         } else {
-            htmlFinal += crearFila("Semana", item.semana);
-            htmlFinal += crearFila("Fecha Registro", item.fechaReg);
-            htmlFinal += crearFila("Sitio / Ubicación", item.sitio);
-            htmlFinal += crearFila("Responsables", item.responsables);
-            htmlFinal += crearFila("Descripción de la Condición", item.condicionDesc);
+            htmlFinal += crearFila("RESPONSABLES", item.responsables);
+            htmlFinal += `
+                <div class="data-row" style="border:none;">
+                    <b>DETALLE DE LA CONDICIÓN:</b>
+                    <div class="desc-box" style="border-left-color: var(--error);">${item.condicionDesc || "Sin descripción registrada"}</div>
+                </div>`;
         }
 
         document.getElementById("datosVisor").innerHTML = htmlFinal;
 
+        // Renderizado de Foto
         let urlVisualizacion = "";
         const fotoValida = item.foto && item.foto.toString().trim().toUpperCase() !== "N/A";
         if(fotoValida && item.foto.includes("drive.google.com")) {
@@ -194,7 +204,9 @@
         }
 
         const contenedorFoto = document.getElementById("valFoto");
-        contenedorFoto.innerHTML = urlVisualizacion ? `<div class="section-title" style="margin-top:20px;">Evidencia Fotográfica</div><a href="${item.foto}" target="_blank"><img src="${urlVisualizacion}" class="img-evidencia"></a>` : "";
+        contenedorFoto.innerHTML = urlVisualizacion ? 
+            `<div class="section-title" style="margin-top:20px;">Evidencia Fotográfica</div>
+             <a href="${item.foto}" target="_blank"><img src="${urlVisualizacion}" class="img-evidencia"></a>` : "";
 
         document.getElementById("visorDetalle").style.display = "block";
     }
@@ -202,7 +214,7 @@
     document.getElementById("formDictamen").onsubmit = async (e) => {
         e.preventDefault();
         const btn = document.getElementById("btnEnviar");
-        if(!confirm("¿Confirmar veredicto y notificación?")) return;
+        if(!confirm("¿Confirmar veredicto y notificación al observador?")) return;
         
         btn.disabled = true; btn.innerText = "PROCESANDO...";
         const formData = new FormData(e.target);
@@ -210,7 +222,7 @@
 
         try {
             await fetch(MI_URL, { method: 'POST', body: params, mode: 'no-cors' });
-            alert("Veredicto guardado y notificación enviada.");
+            alert("Veredicto guardado y notificación enviada exitosamente.");
             document.getElementById("visorDetalle").style.display = "none";
             cargarReportes(); 
         } catch(e) { alert("Error al guardar."); }
@@ -219,7 +231,3 @@
 </script>
 </body>
 </html>
-
-
-
-
