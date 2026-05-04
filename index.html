@@ -18,7 +18,6 @@
         .data-row { margin-bottom: 12px; font-size: 0.95rem; line-height: 1.4; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px; }
         .data-row b { color: var(--navy); display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 2px; letter-spacing: 0.5px; }
         
-        /* Estilo para la caja de descripción destacada */
         .desc-box { background: #f8fafc; padding: 12px; border-radius: 6px; border-left: 4px solid var(--gold); margin-top: 10px; color: #334155; font-style: italic; }
         
         .img-evidencia { width: 100%; border-radius: 8px; margin-top: 10px; border: 2px solid #ddd; display: block; background: #eee; min-height: 150px; object-fit: contain; }
@@ -74,13 +73,14 @@
             <form id="formDictamen">
                 <input type="hidden" id="idFila" name="idFila">
                 <label>Veredicto Final</label>
-                <select name="dictamen" required>
+                <select id="dictamenSelect" name="dictamen" required>
+                    <option value="">-- Seleccionar --</option>
                     <option value="Validado">Validado (Aprobar)</option>
                     <option value="Corregir">Corregir (Retroalimentación)</option>
                     <option value="Rechazado">Rechazado</option>
                 </select>
                 <label style="margin-top:15px;">Comentarios para el Observador</label>
-                <textarea name="comentarios" rows="3" placeholder="Indique las razones del veredicto..." required></textarea>
+                <textarea id="comentariosText" name="comentarios" rows="3" placeholder="Indique las razones del veredicto..." required></textarea>
                 <button type="submit" id="btnEnviar">GUARDAR Y NOTIFICAR POR CORREO</button>
             </form>
         </div>
@@ -88,7 +88,7 @@
 </div>
 
 <script>
-    const MI_URL = "https://script.google.com/macros/s/AKfycbzcxSzlOAVJJ4hODfPw-waMxMWwX8CbSRogZ6hV4m65VS1I7MfVwDhvfakvbygDLbbP/exec";
+    const MI_URL = "https://script.google.com/macros/s/AKfycbzueiP6hC71W7_HvxWhT8KQMRH5IPih5E8irMkp5WgNtWhKh-y76jFssXfi6-vdzrP6/exec";
     let baseDatos = [];
 
     window.onload = async () => {
@@ -133,7 +133,10 @@
             baseDatos = await resp.json();
             selRep.innerHTML = '<option value="">-- Seleccione reporte --</option>';
             if(baseDatos.length > 0) {
-                baseDatos.forEach(r => { selRep.innerHTML += `<option value="${r.id}">Sem ${r.semana} - ${r.sitio}</option>`; });
+                baseDatos.forEach(r => { 
+                    const textoEstatus = r.estatus ? `[${r.estatus}] ` : "[Pendiente] ";
+                    selRep.innerHTML += `<option value="${r.id}">${textoEstatus} Sem ${r.semana} - ${r.sitio}</option>`; 
+                });
                 selRep.disabled = false;
             } else { selRep.innerHTML = '<option value="">Sin reportes pendientes</option>'; }
         } catch(e) { alert("Error al cargar datos"); }
@@ -154,9 +157,21 @@
 
         document.getElementById("idFila").value = item.id;
         
-        // Normalización para detectar el tipo de reporte
-        const tipoOriginal = (item.tipo || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        // 1. SETEAR EL VALOR GUARDADO EN EL FORMULARIO (COLUMNA Q)
+        const dictamenSelect = document.getElementById("dictamenSelect");
+        const comentariosText = document.getElementById("comentariosText");
         
+        // Asignamos el valor que viene de la base de datos (estatus es columna Q)
+        if(item.estatus) {
+            dictamenSelect.value = item.estatus;
+        } else {
+            dictamenSelect.value = "";
+        }
+
+        // Si tienes guardados los comentarios anteriores, también los puedes cargar así:
+        // comentariosText.value = item.comentariosCapitan || "";
+
+        const tipoOriginal = (item.tipo || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         let textoBadge = "REPORTE";
         let colorBadge = "var(--gold)";
 
@@ -171,31 +186,29 @@
         document.getElementById("badgeCont").innerHTML = `<span class="badge-tipo" style="background:${colorBadge}">${textoBadge}</span>`;
 
         let htmlFinal = "";
+        const est = (item.estatus || "Pendiente").toUpperCase();
+        let colorEst = "#64748b"; 
+        if(est.includes("VALIDADO")) colorEst = "var(--success)";
+        if(est.includes("RECHAZADO")) colorEst = "var(--error)";
+        if(est.includes("CORREGIR")) colorEst = "var(--warning)";
+        
+        htmlFinal += `<div class="data-row"><b>ESTATUS ACTUAL</b> <span style="color:${colorEst}; font-weight:bold;">${est}</span></div>`;
+
         htmlFinal += crearFila("SEMANA", item.semana);
         htmlFinal += crearFila("FECHA REGISTRO", item.fechaReg);
         htmlFinal += crearFila("SITIO / UBICACIÓN", item.sitio);
 
-        // Lógica para mostrar descripción y campos específicos
         if (tipoOriginal.includes("acto") || tipoOriginal.includes("observacion")) {
             htmlFinal += crearFila("EQUIPO PROVISTO", item.provisto);
             htmlFinal += crearFila("EQUIPO FALTANTE", item.faltante);
-            htmlFinal += `
-                <div class="data-row" style="border:none;">
-                    <b>DESCRIPCIÓN DE LA ACTIVIDAD:</b>
-                    <div class="desc-box">${item.comentarioActividad || "Sin descripción registrada"}</div>
-                </div>`;
+            htmlFinal += `<div class="data-row" style="border:none;"><b>DESCRIPCIÓN DE LA ACTIVIDAD:</b><div class="desc-box">${item.comentarioActividad || "Sin descripción registrada"}</div></div>`;
         } else {
             htmlFinal += crearFila("RESPONSABLES", item.responsables);
-            htmlFinal += `
-                <div class="data-row" style="border:none;">
-                    <b>DETALLE DE LA CONDICIÓN:</b>
-                    <div class="desc-box" style="border-left-color: var(--error);">${item.condicionDesc || "Sin descripción registrada"}</div>
-                </div>`;
+            htmlFinal += `<div class="data-row" style="border:none;"><b>DETALLE DE LA CONDICIÓN:</b><div class="desc-box" style="border-left-color: var(--error);">${item.condicionDesc || "Sin descripción registrada"}</div></div>`;
         }
 
         document.getElementById("datosVisor").innerHTML = htmlFinal;
 
-        // Renderizado de Foto
         let urlVisualizacion = "";
         const fotoValida = item.foto && item.foto.toString().trim().toUpperCase() !== "N/A";
         if(fotoValida && item.foto.includes("drive.google.com")) {
